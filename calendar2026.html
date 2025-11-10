@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Calendar | 2026年日历</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .calendar-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .calendar-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .month {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 0;
+            overflow: visible;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .month:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .month-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        .calendar-content {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .week-numbers {
+            display: grid;
+            grid-template-rows: repeat(var(--num-weeks), 1fr);
+            gap: 3px;
+            padding-top: 28px;
+            align-content: start;
+        }
+
+        .week-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #666;
+            padding: 2px;
+            min-height: 0;
+            white-space: nowrap;
+            line-height: 1;
+            height: 100%;
+        }
+
+        .weekdays-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 5px;
+            min-width: 0;
+            width: 100%;
+            overflow: visible;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 2px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .weekday {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 2px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .weekday.weekend {
+            color: #d32f2f;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 3px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border-radius: 6px;
+            position: relative;
+            transition: all 0.2s;
+            min-width: 0;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .day:hover {
+            transform: scale(1.1);
+            z-index: 1000;
+        }
+
+        .day-number {
+            font-weight: 600;
+        }
+
+        .day.holiday {
+            background: rgb(0, 75, 149);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 75, 149, 0.3);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .day.holiday:hover {
+            box-shadow: 0 4px 8px rgba(0, 75, 149, 0.4);
+        }
+
+        .day.exchanged-workday {
+            background: #9E9E9E;
+            color: white;
+            box-shadow: 0 2px 4px rgba(158, 158, 158, 0.3);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .day.exchanged-workday:hover {
+            box-shadow: 0 4px 8px rgba(158, 158, 158, 0.4);
+        }
+
+        .day.exchanged-workday[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 8px;
+            background: #1a1a1a;
+            color: white;
+            font-size: 10px;
+            white-space: nowrap;
+            border-radius: 4px;
+            z-index: 999999;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-weight: 500;
+        }
+
+        .day.exchanged-workday[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 3px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #1a1a1a;
+            z-index: 999999;
+            pointer-events: none;
+        }
+
+        .day.holiday[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 8px;
+            background: #1a1a1a;
+            color: white;
+            font-size: 10px;
+            white-space: nowrap;
+            border-radius: 4px;
+            z-index: 999999;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-weight: 500;
+        }
+
+        .day.holiday[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 3px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #1a1a1a;
+            z-index: 999999;
+            pointer-events: none;
+        }
+
+        .day.weekend {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        .day.regular {
+            color: #333;
+        }
+
+        .month-description {
+            margin-top: 12px;
+            font-size: 10px;
+            line-height: 1.6;
+            color: #666;
+            text-align: left;
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            border-top: 2px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .legend-color.holiday {
+            background: rgb(0, 75, 149);
+        }
+
+        .legend-color.exchanged-workday {
+            background: #9E9E9E;
+        }
+
+        .legend-color.weekend {
+            background: transparent;
+            border: 1px solid #d32f2f;
+        }
+
+        .legend-text {
+            color: #666;
+        }
+
+        .legend-text.weekend {
+            color: #d32f2f;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .calendar-container {
+                max-width: 100%;
+                padding: 10px;
+                box-shadow: none;
+                border: none;
+            }
+
+            .calendar-title {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+
+            .months-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+
+            .month {
+                padding: 6px;
+            }
+
+            .month-header {
+                font-size: 12px;
+                margin-bottom: 5px;
+            }
+
+            .calendar-content {
+                gap: 6px;
+            }
+
+            .week-numbers {
+                padding-top: 20px;
+            }
+
+            .week-number {
+                font-size: 8px;
+            }
+
+            .weekday {
+                font-size: 8px;
+                padding: 2px;
+            }
+
+            .day {
+                font-size: 10px;
+            }
+
+            .month-description {
+                font-size: 8px;
+                margin-top: 5px;
+            }
+
+            .legend {
+                margin-top: 10px;
+                padding: 8px;
+                font-size: 10px;
+                gap: 10px;
+            }
+
+            .legend-color {
+                width: 15px;
+                height: 15px;
+            }
+
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+        }
+
+        @media screen and (max-width: 1600px) {
+            .months-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media screen and (max-width: 1400px) {
+            .calendar-container {
+                padding: 30px;
+            }
+            
+            .months-grid {
+                gap: 15px;
+            }
+        }
+
+        @media screen and (max-width: 1200px) {
+            .months-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media screen and (max-width: 900px) {
+            .months-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .month {
+                padding: 12px;
+            }
+            
+            .calendar-content {
+                gap: 6px;
+            }
+            
+            .weekday {
+                font-size: 10px;
+                padding: 3px 1px;
+            }
+            
+            .day {
+                font-size: 11px;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            
+            .calendar-container {
+                padding: 20px;
+            }
+            
+            .months-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .month {
+                padding: 12px;
+            }
+            
+            .weekday {
+                font-size: 9px;
+                padding: 2px 1px;
+            }
+            
+            .day {
+                font-size: 10px;
+            }
+            
+            .week-number {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <h1 class="calendar-title" id="calendarTitle"></h1>
+        <div class="months-grid" id="monthsGrid"></div>
+        <div class="legend" id="legend"></div>
+    </div>
+
+    <script>
+        // Language data
+        const translations = {
+            zh: {
+                months: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                weekdays: ['一', '二', '三', '四', '五', '六', '日'],
+                weekdaysFull: ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'],
+                holidays: {
+                    'new-year': '元旦',
+                    'spring-festival': '春节',
+                    'qingming': '清明节',
+                    'labor-day': '劳动节',
+                    'dragon-boat': '端午节',
+                    'mid-autumn': '中秋节',
+                    'national-day': '国庆节'
+                }
+            },
+            en: {
+                months: ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'],
+                weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                weekdaysFull: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                holidays: {
+                    'new-year': 'New Year\'s Day',
+                    'spring-festival': 'Spring Festival',
+                    'qingming': 'Pure Brightness Festival',
+                    'labor-day': 'International Labor Day',
+                    'dragon-boat': 'Dragon Boat Festival',
+                    'mid-autumn': 'Mid-Autumn Festival',
+                    'national-day': 'National Day'
+                }
+            }
+        };
+
+        // Detect browser language
+        function getBrowserLanguage() {
+            const lang = navigator.language || navigator.userLanguage;
+            return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        const currentLang = getBrowserLanguage();
+
+        // 2026 Holiday data based on official notice
+        const holidays2026 = {
+            // New Year: Jan 1-3 (3 days), work Jan 4 (Sunday)
+            '2026-01-01': { type: 'holiday', name: 'new-year' },
+            '2026-01-02': { type: 'holiday', name: 'new-year' },
+            '2026-01-03': { type: 'holiday', name: 'new-year' },
+            '2026-01-04': { type: 'exchanged-workday', relatedHoliday: 'new-year' },
+            
+            // Spring Festival: Feb 15-23 (9 days), work Feb 14 and Feb 28 (Saturdays)
+            '2026-02-14': { type: 'exchanged-workday', relatedHoliday: 'spring-festival' },
+            '2026-02-15': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-16': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-17': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-18': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-19': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-20': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-21': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-22': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-23': { type: 'holiday', name: 'spring-festival' },
+            '2026-02-28': { type: 'exchanged-workday', relatedHoliday: 'spring-festival' },
+            
+            // Qingming: Apr 4-6 (3 days)
+            '2026-04-04': { type: 'holiday', name: 'qingming' },
+            '2026-04-05': { type: 'holiday', name: 'qingming' },
+            '2026-04-06': { type: 'holiday', name: 'qingming' },
+            
+            // Labor Day: May 1-5 (5 days), work May 9 (Saturday)
+            '2026-05-01': { type: 'holiday', name: 'labor-day' },
+            '2026-05-02': { type: 'holiday', name: 'labor-day' },
+            '2026-05-03': { type: 'holiday', name: 'labor-day' },
+            '2026-05-04': { type: 'holiday', name: 'labor-day' },
+            '2026-05-05': { type: 'holiday', name: 'labor-day' },
+            '2026-05-09': { type: 'exchanged-workday', relatedHoliday: 'labor-day' },
+            
+            // Dragon Boat: Jun 19-21 (3 days)
+            '2026-06-19': { type: 'holiday', name: 'dragon-boat' },
+            '2026-06-20': { type: 'holiday', name: 'dragon-boat' },
+            '2026-06-21': { type: 'holiday', name: 'dragon-boat' },
+            
+            // Mid-Autumn: Sep 25-27 (3 days)
+            '2026-09-25': { type: 'holiday', name: 'mid-autumn' },
+            '2026-09-26': { type: 'holiday', name: 'mid-autumn' },
+            '2026-09-27': { type: 'holiday', name: 'mid-autumn' },
+            '2026-09-20': { type: 'exchanged-workday', relatedHoliday: 'national-day' },
+            
+            // National Day: Oct 1-7 (7 days), work Sep 20 (Sunday) and Oct 10 (Saturday)
+            '2026-10-01': { type: 'holiday', name: 'national-day' },
+            '2026-10-02': { type: 'holiday', name: 'national-day' },
+            '2026-10-03': { type: 'holiday', name: 'national-day' },
+            '2026-10-04': { type: 'holiday', name: 'national-day' },
+            '2026-10-05': { type: 'holiday', name: 'national-day' },
+            '2026-10-06': { type: 'holiday', name: 'national-day' },
+            '2026-10-07': { type: 'holiday', name: 'national-day' },
+            '2026-10-10': { type: 'exchanged-workday', relatedHoliday: 'national-day' }
+        };
+
+        // Get day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+        function getDayOfWeek(year, month, day) {
+            const date = new Date(year, month - 1, day);
+            return date.getDay();
+        }
+
+        // Check if date is weekend (Saturday or Sunday)
+        function isWeekend(year, month, day) {
+            const dayOfWeek = getDayOfWeek(year, month, day);
+            return dayOfWeek === 0 || dayOfWeek === 6;
+        }
+
+        // Format date as YYYY-MM-DD
+        function formatDate(year, month, day) {
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+
+        // Get days in month
+        function getDaysInMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        // Get ISO week number (week starts on Monday)
+        function getISOWeekNumber(year, month, day) {
+            const date = new Date(year, month - 1, day);
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // Get month description
+        function getMonthDescription(year, month) {
+            const descriptions = {
+                zh: {
+                    1: '1月1日-3日：元旦',
+                    2: '2月15日-23日：春节',
+                    3: '',
+                    4: '4月4日-6日：清明节',
+                    5: '5月1日-5日：劳动节',
+                    6: '6月19日-21日：端午节',
+                    7: '',
+                    8: '',
+                    9: '9月25日-27日：中秋节',
+                    10: '10月1日-7日：国庆节',
+                    11: '',
+                    12: ''
+                },
+                en: {
+                    1: 'January 1-3: New Year\'s Day',
+                    2: 'February 15-23: Spring Festival',
+                    3: '',
+                    4: 'April 4-6: Pure Brightness Festival',
+                    5: 'May 1-5: International Labor Day',
+                    6: 'June 19-21: Dragon Boat Festival',
+                    7: '',
+                    8: '',
+                    9: 'September 25-27: Mid-Autumn Festival',
+                    10: 'October 1-7: National Day',
+                    11: '',
+                    12: ''
+                }
+            };
+            return descriptions[currentLang][month] || '';
+        }
+
+        // Create month calendar
+        function createMonth(year, month) {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month';
+            
+            const monthHeader = document.createElement('div');
+            monthHeader.className = 'month-header';
+            monthHeader.textContent = translations[currentLang].months[month - 1];
+            monthDiv.appendChild(monthHeader);
+
+            // Calendar content wrapper
+            const calendarContent = document.createElement('div');
+            calendarContent.className = 'calendar-content';
+
+            // Days grid with week numbers
+            const daysInMonth = getDaysInMonth(year, month);
+            const firstDayOfWeek = getDayOfWeek(year, month, 1);
+            
+            // Adjust first day to Monday (0 = Monday, 6 = Sunday)
+            const startOffset = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1);
+
+            // Calculate number of weeks
+            const totalCells = startOffset + daysInMonth;
+            const numWeeks = Math.ceil(totalCells / 7);
+
+            // Week numbers column
+            const weekNumbersDiv = document.createElement('div');
+            weekNumbersDiv.className = 'week-numbers';
+            weekNumbersDiv.style.setProperty('--num-weeks', numWeeks);
+            
+            // Weekdays and days container
+            const weekdaysContainer = document.createElement('div');
+            weekdaysContainer.className = 'weekdays-container';
+
+            // Weekdays header
+            const weekdaysDiv = document.createElement('div');
+            weekdaysDiv.className = 'weekdays';
+            for (let i = 0; i < 7; i++) {
+                const weekdayDiv = document.createElement('div');
+                weekdayDiv.className = 'weekday';
+                // Saturday (index 5) and Sunday (index 6) are weekends
+                if (i === 5 || i === 6) {
+                    weekdayDiv.classList.add('weekend');
+                }
+                weekdayDiv.textContent = translations[currentLang].weekdays[i];
+                weekdaysDiv.appendChild(weekdayDiv);
+            }
+            weekdaysContainer.appendChild(weekdaysDiv);
+            
+            // Days grid
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid';
+
+            // Calculate week numbers for each row
+            let weekNumbers = [];
+
+            // Calculate week number for the first row (may start with empty cells)
+            // If first day is not Monday, we need to calculate week number from the first day of month
+            const firstDayWeekNum = getISOWeekNumber(year, month, 1);
+            weekNumbers.push(firstDayWeekNum);
+
+            // Empty cells before first day
+            for (let i = 0; i < startOffset; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day';
+                daysGrid.appendChild(emptyDiv);
+            }
+
+            // Days of the month
+            let currentWeekIndex = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                const dateStr = formatDate(year, month, day);
+                const dayInfo = holidays2026[dateStr];
+                const isWeekendDay = isWeekend(year, month, day);
+
+                // Check if this is the first day of a new week (after the first week)
+                const dayIndex = startOffset + day - 1;
+                const isFirstDayOfWeek = dayIndex % 7 === 0;
+                
+                if (isFirstDayOfWeek && day > 1) {
+                    // Calculate week number for this day
+                    const weekNum = getISOWeekNumber(year, month, day);
+                    weekNumbers.push(weekNum);
+                    currentWeekIndex++;
+                }
+
+                dayDiv.className = 'day';
+                if (dayInfo) {
+                    if (dayInfo.type === 'holiday') {
+                        dayDiv.classList.add('holiday');
+                        // Add tooltip for holidays
+                        const holidayName = translations[currentLang].holidays[dayInfo.name] || '';
+                        if (holidayName) {
+                            dayDiv.setAttribute('data-tooltip', holidayName);
+                        }
+                    } else if (dayInfo.type === 'exchanged-workday') {
+                        dayDiv.classList.add('exchanged-workday');
+                        // Add tooltip for exchanged workdays showing related holiday
+                        let exchangedText = '';
+                        if (dayInfo.relatedHoliday) {
+                            const holidayName = translations[currentLang]?.holidays?.[dayInfo.relatedHoliday];
+                            if (holidayName) {
+                                exchangedText = currentLang === 'zh' 
+                                    ? `${holidayName}调休工作日` 
+                                    : `Exchanged workday for ${holidayName}`;
+                            }
+                        }
+                        // Fallback if holiday name not found or no related holiday
+                        if (!exchangedText) {
+                            exchangedText = currentLang === 'zh' 
+                                ? '调休工作日' 
+                                : 'Exchanged workday';
+                        }
+                        dayDiv.setAttribute('data-tooltip', exchangedText);
+                    }
+                } else {
+                    // Regular weekends (not holidays or exchanged workdays) are red
+                    if (isWeekendDay) {
+                        dayDiv.classList.add('weekend');
+                    } else {
+                        dayDiv.classList.add('regular');
+                    }
+                }
+
+                const dayNumber = document.createElement('span');
+                dayNumber.className = 'day-number';
+                dayNumber.textContent = day;
+                dayDiv.appendChild(dayNumber);
+
+                daysGrid.appendChild(dayDiv);
+            }
+
+            // Add remaining empty cells for alignment
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+            for (let i = 0; i < remainingCells; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day';
+                daysGrid.appendChild(emptyDiv);
+            }
+
+            // Create week number cells for all rows
+            for (let i = 0; i < numWeeks; i++) {
+                const weekNumDiv = document.createElement('div');
+                weekNumDiv.className = 'week-number';
+                if (i < weekNumbers.length) {
+                    weekNumDiv.textContent = currentLang === 'zh' ? `第${weekNumbers[i]}周` : `Week ${weekNumbers[i]}`;
+                }
+                weekNumbersDiv.appendChild(weekNumDiv);
+            }
+
+            weekdaysContainer.appendChild(daysGrid);
+
+            // Add week numbers and content to calendar
+            calendarContent.appendChild(weekNumbersDiv);
+            calendarContent.appendChild(weekdaysContainer);
+            
+            monthDiv.appendChild(calendarContent);
+
+            // Month description
+            const description = getMonthDescription(year, month);
+            if (description) {
+                const descDiv = document.createElement('div');
+                descDiv.className = 'month-description';
+                descDiv.textContent = description;
+                monthDiv.appendChild(descDiv);
+            }
+
+            return monthDiv;
+        }
+
+        // Render legend
+        function renderLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+
+            const legendItems = {
+                zh: [
+                    { type: 'holiday', text: '假期' },
+                    { type: 'exchanged-workday', text: '调整为工作日' },
+                    { type: 'weekend', text: '周末' }
+                ],
+                en: [
+                    { type: 'holiday', text: 'Holiday' },
+                    { type: 'exchanged-workday', text: 'Exchanged Workdays' },
+                    { type: 'weekend', text: 'Weekend' }
+                ]
+            };
+
+            legendItems[currentLang].forEach(item => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+
+                const colorBox = document.createElement('div');
+                colorBox.className = `legend-color ${item.type}`;
+                legendItem.appendChild(colorBox);
+
+                const text = document.createElement('span');
+                text.className = `legend-text ${item.type === 'weekend' ? 'weekend' : ''}`;
+                text.textContent = item.text;
+                legendItem.appendChild(text);
+
+                legend.appendChild(legendItem);
+            });
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            // Set title
+            const title = document.getElementById('calendarTitle');
+            title.textContent = currentLang === 'zh' ? '2026年日历' : 'CALENDAR OF 2026';
+
+            const monthsGrid = document.getElementById('monthsGrid');
+            monthsGrid.innerHTML = '';
+
+            for (let month = 1; month <= 12; month++) {
+                const monthDiv = createMonth(2026, month);
+                monthsGrid.appendChild(monthDiv);
+            }
+
+            renderLegend();
+        }
+
+        // Initialize
+        renderCalendar();
+    </script>
+</body>
+</html>
